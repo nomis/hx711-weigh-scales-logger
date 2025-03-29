@@ -16,23 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "scales/app.h"
+#pragma once
 
 #include <Arduino.h>
 
+#include <uuid/log.h>
+
 namespace scales {
 
-App::App() {
-}
+class HX711 {
+public:
+	HX711(int data_pin, int sck_pin);
 
-void App::start() {
-	app::App::start();
-	hx711_.start();
-}
+	void start();
+	void loop();
 
-void App::loop() {
-	app::App::loop();
-	hx711_.loop();
-}
+protected:
+    static uuid::log::Logger logger_;
+
+private:
+    const int data_pin_;
+    const int sck_pin_;
+};
 
 } // namespace scales

@@ -20,9 +20,8 @@
 
 #include <Arduino.h>
 
-#include <vector>
-
 #include "app/app.h"
+#include "hx711.h"
 
 namespace scales {
 
@@ -30,6 +29,9 @@ class App: public app::App {
 private:
 #if defined(ARDUINO_LOLIN_S3)
 	static constexpr int LED_PIN = 38;
+
+	static constexpr int DATA_PIN = 1;
+	static constexpr int SCK_PIN = 2;
 #else
 # error "Unknown board"
 #endif
@@ -41,6 +43,7 @@ public:
 	void loop() override;
 
 private:
+	HX711 hx711_{DATA_PIN, SCK_PIN};
 };
 
 } // namespace scales
