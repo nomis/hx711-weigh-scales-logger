@@ -83,7 +83,8 @@ static void readings(Shell &shell, const std::vector<std::string> &arguments) {
 	shell.printfln(F("Current: %d"), (int)hx711.reading());
 
 	if (hx711.start_us() > 0) {
-		shell.printfln(F("Started at %" PRIu64), hx711.start_us());
+		shell.printfln(F("Started at %" PRIu64 " (%lu.%06lu)"), hx711.start_us(),
+			hx711.realtime_us().tv_sec, hx711.realtime_us().tv_usec);
 		if (hx711.running()) {
 			shell.printfln(F("Running for %" PRIu64), hx711.duration_us());
 		} else {

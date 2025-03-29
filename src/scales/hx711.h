@@ -20,6 +20,8 @@
 
 #include <Arduino.h>
 
+#include <sys/time.h>
+
 #include <uuid/log.h>
 
 namespace scales {
@@ -56,6 +58,7 @@ public:
     void start();
     void tare();
     inline bool running() const { return running_; }
+    inline struct timeval realtime_us() const { return realtime_us_; }
     inline uint64_t start_us() const { return start_us_; }
     uint64_t duration_us() const;
     inline unsigned long count() const { return buffer_pos_; }
@@ -66,10 +69,17 @@ protected:
     static uuid::log::Logger logger_;
 
 private:
+    static constexpr unsigned long EPOCH_S = 1735689600;
+    static constexpr const char *DIRECTORY_NAME = "/readings";
+    static constexpr const char *FILENAME_EXT = ".cbor";
+
+    void save();
+
     const int data_pin_;
     const int sck_pin_;
     int32_t reading_{0};
     int32_t tare_value_{0};
+    struct timeval realtime_us_{0, 0};
     uint64_t start_us_{0};
     uint64_t stop_us_{0};
     MemoryAllocation buffer_;
