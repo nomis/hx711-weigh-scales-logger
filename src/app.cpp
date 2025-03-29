@@ -27,7 +27,7 @@ App::App() {
 
 void App::start() {
 	app::App::start();
-	hx711_.start();
+	hx711_.init();
 }
 
 void App::loop() {

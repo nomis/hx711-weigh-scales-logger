@@ -42,6 +42,8 @@ public:
 	void start() override;
 	void loop() override;
 
+	HX711& hx711() { return hx711_; }
+
 private:
 	HX711 hx711_{DATA_PIN, SCK_PIN};
 };

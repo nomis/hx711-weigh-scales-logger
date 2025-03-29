@@ -44,6 +44,11 @@ using ::app::ShellContext;
 #define MAKE_PSTR_WORD(string_name) MAKE_PSTR(string_name, #string_name)
 #define F_(string_name) FPSTR(__pstr__##string_name)
 
+MAKE_PSTR_WORD(readings)
+MAKE_PSTR_WORD(start)
+MAKE_PSTR_WORD(stop)
+MAKE_PSTR_WORD(tare)
+
 namespace scales {
 
 #pragma GCC diagnostic push
@@ -64,8 +69,41 @@ static constexpr inline ScalesShell &to_shell(Shell &shell) {
 
 #define NO_ARGUMENTS std::vector<std::string>{}
 
-static inline void setup_commands(std::shared_ptr<Commands> &commands) {
+static void start(Shell &shell, const std::vector<std::string> &arguments) {
+	to_app(shell).hx711().start();
+}
 
+static void tare(Shell &shell, const std::vector<std::string> &arguments) {
+	to_app(shell).hx711().tare();
+}
+
+static void readings(Shell &shell, const std::vector<std::string> &arguments) {
+	HX711 &hx711 = to_app(shell).hx711();
+
+	shell.printfln(F("Current: %d"), (int)hx711.reading());
+
+	if (hx711.start_us() > 0) {
+		shell.printfln(F("Started at %" PRIu64), hx711.start_us());
+		if (hx711.running()) {
+			shell.printfln(F("Running for %" PRIu64), hx711.duration_us());
+		} else {
+			shell.printfln(F("Stopped after %" PRIu64), hx711.duration_us());
+		}
+		shell.printfln(F("Readings: %lu/%lu"), hx711.count(), hx711.max_count());
+	} else {
+		shell.printfln(F("Never started"));
+	}
+}
+
+static void stop(Shell &shell, const std::vector<std::string> &arguments) {
+	to_app(shell).hx711().stop();
+}
+
+static inline void setup_commands(std::shared_ptr<Commands> &commands) {
+	commands->add_command({F_(start)}, start);
+	commands->add_command({F_(tare)}, tare);
+	commands->add_command({F_(readings)}, readings);
+	commands->add_command({F_(stop)}, stop);
 }
 
 ScalesShell::ScalesShell(app::App &app, Stream &stream, unsigned int context, unsigned int flags)
