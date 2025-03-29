@@ -19,6 +19,7 @@
 #include <Arduino.h>
 
 #include "scales/app.h"
+#include "scales/web_interface.h"
 
 static scales::App application;
 

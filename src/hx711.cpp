@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <mutex>
 #include <sys/time.h>
 
 #include <CBOR.h>
@@ -87,6 +88,8 @@ void HX711::loop() {
 	int32_t value = ((reading & 0x1000000) ? 0xFF000000 : 0) | (reading >> 1);
 	uint64_t now = ::esp_timer_get_time();
 
+	std::lock_guard lock{mutex_};
+
 	if (running_ && buffer_pos_ < BUFFER_SIZE) {
 		Data &data = buffer_.get()[buffer_pos_++];
 
@@ -96,8 +99,13 @@ void HX711::loop() {
 
 		logger_.trace("Reading: %d (%07x) [%lu]", value, reading, buffer_pos_);
 
-		if (buffer_pos_ == BUFFER_SIZE)
+		if (tare_) {
+			buffer_tare_ = true;
+		}
+
+		if (buffer_pos_ == BUFFER_SIZE) {
 			logger_.notice("Maximum readings reached");
+		}
 	} else {
 		logger_.trace("Reading: %d (%07x)", value, reading);
 	}
@@ -111,31 +119,40 @@ void HX711::loop() {
 }
 
 int32_t HX711::reading() {
+	std::lock_guard lock{mutex_};
+
 	return reading_ - tare_value_;
 }
 
 void HX711::start() {
+	std::lock_guard lock{mutex_};
+
 	gettimeofday(&realtime_us_, NULL);
 	start_us_ = 0;
 	stop_us_ = 0;
 	buffer_pos_ = 0;
 	running_ = false;
 
-	if (realtime_us_.tv_sec < 0 || (unsigned long)realtime_us_.tv_sec < EPOCH_S)
+	if (realtime_us_.tv_sec < 0 || (unsigned long)realtime_us_.tv_sec < EPOCH_S) {
 		return;
+	}
 
 	logger_.info("Start");
 	start_us_ = ::esp_timer_get_time();
 	buffer_pos_ = 0;
+	buffer_tare_ = false;
 	running_ = true;
 	tare_ = false;
 }
 
 void HX711::tare() {
+	std::lock_guard lock{mutex_};
 	tare_ = true;
 }
 
 uint64_t HX711::duration_us() const {
+	std::lock_guard lock{mutex_};
+
 	if (running_) {
 		return ::esp_timer_get_time() - start_us_;
 	} else {
@@ -144,6 +161,8 @@ uint64_t HX711::duration_us() const {
 }
 
 void HX711::stop() {
+	std::lock_guard lock{mutex_};
+
 	if (running_) {
 		stop_us_ = ::esp_timer_get_time();
 		logger_.info("Stop");
@@ -186,14 +205,15 @@ void HX711::save() {
 
 	app::write_text(writer, "readings_format");
 	writer.beginArray(3);
-	app::write_text(writer, "<offset_us>");
-	app::write_text(writer, "<value>");
+	app::write_text(writer, "<offset_time_us>");
+	app::write_text(writer, "<offset_value>");
 	app::write_text(writer, "[flags]");
 
 	app::write_text(writer, "readings");
 	writer.beginArray(buffer_pos_);
 
 	uint32_t previous_us = 0;
+	int32_t previous_value = 0;
 
 	for (unsigned long i = 0; i < buffer_pos_; i++) {
 		const Data &data = buffer_.get()[i];
@@ -202,12 +222,12 @@ void HX711::save() {
 		writer.beginArray(2 + (data.type == Type::TARE ? 1 : 0));
 		writer.writeUnsignedInt(data.time_us - previous_us);
 		previous_us = data.time_us;
-		writer.writeInt(value);
+		writer.writeInt(value - previous_value);
+		previous_value = value;
 
 		if (data.type == Type::TARE) {
 			app::write_text(writer, "tare");
 		}
-
 	}
 
 	if (file.getWriteError()) {

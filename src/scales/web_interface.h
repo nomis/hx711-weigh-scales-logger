@@ -1,6 +1,6 @@
 /*
  * hx711-weigh-scales-logger - HX711 weigh scales data logger
- * Copyright 2025  Simon Arlott
+ * Copyright 2023,2025  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "scales/app.h"
+#pragma once
 
 #include <Arduino.h>
 
-#include <memory>
+#include <uuid/log.h>
 
-#include "scales/web_interface.h"
+#include "app.h"
+#include "web_server.h"
 
 namespace scales {
 
-App::App() {
-}
+class WebServer;
 
-void App::start() {
-	app::App::start();
-	hx711_.init();
-	web_interface_ = std::make_unique<WebInterface>(*this);
-}
+class WebInterface {
+public:
+	WebInterface(App &app);
 
-void App::loop() {
-	app::App::loop();
-	hx711_.loop();
-}
+private:
+	static std::unordered_map<std::string_view,std::string_view> parse_form(std::string_view text);
+
+	bool status(WebServer::Request &req);
+	bool action(WebServer::Request &req);
+
+	static uuid::log::Logger logger_;
+
+	App &app_;
+	WebServer server_;
+};
 
 } // namespace scales

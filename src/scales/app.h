@@ -20,10 +20,14 @@
 
 #include <Arduino.h>
 
+#include <memory>
+
 #include "app/app.h"
 #include "hx711.h"
 
 namespace scales {
+
+class WebInterface;
 
 class App: public app::App {
 private:
@@ -42,10 +46,13 @@ public:
 	void start() override;
 	void loop() override;
 
+	inline const std::string& immutable_id() const { return app_hash(); }
+
 	HX711& hx711() { return hx711_; }
 
 private:
 	HX711 hx711_{DATA_PIN, SCK_PIN};
+	std::unique_ptr<WebInterface> web_interface_;
 };
 
 } // namespace scales

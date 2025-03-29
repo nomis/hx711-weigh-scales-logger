@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	hx711-weigh-scales-logger - HX711 weigh scales data logger
+	Copyright 2025  Simon Arlott
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Affero General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Affero General Public License for more details.
+
+	You should have received a copy of the GNU Affero General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+	<xsl:output method="html" version="5.0" encoding="UTF-8" indent="yes"/>
+
+	<xsl:template match="/r">
+		<html>
+			<head>
+				<meta name="viewport" content="width=device-width, initial-scale=1"/>
+				<style type="text/css">
+					html, body, form {
+						margin: 1em 0 0 0;
+						padding: 0;
+					}
+					input {
+						margin: 2em 0 0 0;
+						padding: 3em 0 3em 0;
+						width: 50%;
+						border: none;
+						border-bottom: 2px solid #FFFFFF;
+						font-weight: bold;
+						color: #000000;
+						background-color: hsl(223, 100%, 80%);
+						cursor: pointer;
+					}
+					input:hover {
+						text-decoration: dotted underline;
+					}
+					#start {
+						background-color: hsl(90, 100%, 65%);
+					}
+					#tare {
+						background-color: hsl(23, 100%, 65%);
+					}
+					#stop {
+						background-color: hsl(0, 100%, 65%);
+					}
+					input:active {
+						background-color: hsl(0, 0%, 50%);
+						text-decoration: wavy underline;
+					}
+					#value {
+						font-weight: bold;
+					}
+				</style>
+				<link rel="icon" href="data:,"/>
+			</head>
+			<body>
+				<center>
+					<xsl:apply-templates select="v" mode="html"/>
+					<xsl:apply-templates select="s" mode="html"/>
+					<xsl:apply-templates select="n" mode="html"/>
+
+					<form method="POST" action="/action">
+						<input type="hidden" name="action">
+							<xsl:attribute name="value">start</xsl:attribute>
+						</input>
+						<input type="submit">
+							<xsl:attribute name="id">start</xsl:attribute>
+							<xsl:attribute name="value">Start</xsl:attribute>
+						</input>
+					</form>
+
+					<form method="POST" action="/action">
+						<input type="hidden" name="action">
+							<xsl:attribute name="value">tare</xsl:attribute>
+						</input>
+						<input type="submit" name="action">
+							<xsl:attribute name="id">tare</xsl:attribute>
+							<xsl:attribute name="value">Tare</xsl:attribute>
+						</input>
+					</form>
+
+					<form method="POST" action="/action">
+						<input type="hidden" name="action">
+							<xsl:attribute name="value">stop</xsl:attribute>
+						</input>
+						<input type="submit" name="action">
+							<xsl:attribute name="id">stop</xsl:attribute>
+							<xsl:attribute name="value">Stop</xsl:attribute>
+						</input>
+					</form>
+				</center>
+			</body>
+		</html>
+	</xsl:template>
+
+	<xsl:template match="/r/v" mode="html">
+		<p>
+			<xsl:attribute name="id">value</xsl:attribute>
+			<xsl:value-of select="text()"/>
+		</p>
+	</xsl:template>
+
+	<xsl:template match="/r/s" mode="html">
+		<p>
+			<xsl:attribute name="id">started</xsl:attribute>
+			<xsl:value-of select="@t"/><br/>
+			<xsl:choose>
+				<xsl:when test="a">running for</xsl:when>
+				<xsl:otherwise>completed after</xsl:otherwise>
+			</xsl:choose>
+			<xsl:text> </xsl:text><xsl:value-of select="@d"/><br/><br/>
+			<xsl:choose>
+				<xsl:when test="z">tare set</xsl:when>
+				<xsl:otherwise>no tare</xsl:otherwise>
+			</xsl:choose><br/>
+			<xsl:value-of select="@c"/>/<xsl:value-of select="@m"/>
+		</p>
+	</xsl:template>
+
+	<xsl:template match="/r/n">
+		<p>No readings</p>
+	</xsl:template>
+</xsl:stylesheet>
