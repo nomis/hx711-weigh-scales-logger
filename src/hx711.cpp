@@ -205,12 +205,12 @@ void HX711::save() {
 
 	app::write_text(writer, "readings_format");
 	writer.beginArray(3);
-	app::write_text(writer, "<offset_time_us>");
-	app::write_text(writer, "<offset_value>");
-	app::write_text(writer, "[flags]");
+	app::write_text(writer, "[flags:text]");
+	app::write_text(writer, "<offset_time_us:uint>");
+	app::write_text(writer, "<offset_value:int>");
 
 	app::write_text(writer, "readings");
-	writer.beginArray(buffer_pos_);
+	writer.beginIndefiniteArray();
 
 	uint32_t previous_us = 0;
 	int32_t previous_value = 0;
@@ -219,16 +219,17 @@ void HX711::save() {
 		const Data &data = buffer_.get()[i];
 		int32_t value = ((data.value & 0x800000) ? 0xFF000000 : 0) | data.value;
 
-		writer.beginArray(2 + (data.type == Type::TARE ? 1 : 0));
+		if (data.type == Type::TARE) {
+			app::write_text(writer, "tare");
+		}
+
 		writer.writeUnsignedInt(data.time_us - previous_us);
 		previous_us = data.time_us;
 		writer.writeInt(value - previous_value);
 		previous_value = value;
-
-		if (data.type == Type::TARE) {
-			app::write_text(writer, "tare");
-		}
 	}
+
+	writer.endIndefinite();
 
 	if (file.getWriteError()) {
 		logger_.err(F("Failed to write file %s: %u"), filename.c_str(), file.getWriteError());
