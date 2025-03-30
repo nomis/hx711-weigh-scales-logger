@@ -36,14 +36,13 @@
 						border-bottom: 2px solid #FFFFFF;
 						font-weight: bold;
 						color: #000000;
-						background-color: hsl(223, 100%, 80%);
 						cursor: pointer;
 					}
 					input:hover {
 						text-decoration: dotted underline;
 					}
 					#start {
-						background-color: hsl(90, 100%, 65%);
+						background-color: hsl(210, 100%, 65%);
 					}
 					#tare {
 						background-color: hsl(23, 100%, 65%);
@@ -57,6 +56,15 @@
 					}
 					#value {
 						font-weight: bold;
+					}
+					.tare, .no_tare {
+						display: inline-block; margin: 5px; padding: 5px;
+					}
+					.tare {
+						border: 5px solid hsl(90, 100%, 65%);
+					}
+					.no_tare {
+						border: 5px dotted hsl(0, 100%, 65%);
 					}
 				</style>
 				<link rel="icon" href="data:,"/>
@@ -118,8 +126,8 @@
 			</xsl:choose>
 			<xsl:text> </xsl:text><xsl:value-of select="@d"/><br/><br/>
 			<xsl:choose>
-				<xsl:when test="z">tare set</xsl:when>
-				<xsl:otherwise>no tare</xsl:otherwise>
+				<xsl:when test="z"><span class="tare">tare set</span></xsl:when>
+				<xsl:otherwise><span class="no_tare">no tare</span></xsl:otherwise>
 			</xsl:choose><br/>
 			<xsl:value-of select="@c"/>/<xsl:value-of select="@m"/>
 		</p>
