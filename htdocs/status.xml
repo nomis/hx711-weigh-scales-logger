@@ -29,8 +29,8 @@
 						padding: 0;
 					}
 					input {
-						margin: 2em 0 0 0;
-						padding: 3em 0 3em 0;
+						margin: 1em 0 0 0;
+						padding: 2em 0 2em 0;
 						width: 50%;
 						border: none;
 						border-bottom: 2px solid #FFFFFF;
@@ -41,35 +41,50 @@
 					input:hover {
 						text-decoration: dotted underline;
 					}
-					#start {
+					input.start {
+						border: 1em solid hsl(210, 100%, 65%);
 						background-color: hsl(210, 100%, 65%);
 					}
-					#tare {
+					body.running input.start {
+						background-color: #fff;
+					}
+					input.tare {
+						border: 1em solid hsl(23, 100%, 65%);
 						background-color: hsl(23, 100%, 65%);
 					}
-					#stop {
+					body.tare input.tare {
+						background-color: #fff;
+					}
+					input.stop {
+						border: 1em solid hsl(0, 100%, 65%);
+						background-color: #fff;
+					}
+					body.running input.stop {
 						background-color: hsl(0, 100%, 65%);
 					}
 					input:active {
 						background-color: hsl(0, 0%, 50%);
 						text-decoration: wavy underline;
 					}
-					#value {
+					.value {
 						font-weight: bold;
 					}
-					.tare, .no_tare {
-						display: inline-block; margin: 5px; padding: 5px;
+					span.tare {
+						display: inline-block; margin: 0.25em; padding: 0.25em;
+						border: 0.25em dotted hsl(0, 100%, 65%);
 					}
-					.tare {
-						border: 5px solid hsl(90, 100%, 65%);
-					}
-					.no_tare {
-						border: 5px dotted hsl(0, 100%, 65%);
+					body.tare span.tare {
+						border: 0.25em solid hsl(90, 100%, 65%);
 					}
 				</style>
 				<link rel="icon" href="data:,"/>
 			</head>
 			<body>
+				<xsl:attribute name="class">
+					<xsl:if test="s/a">running</xsl:if>
+					<xsl:text> </xsl:text>
+					<xsl:if test="s/z">tare</xsl:if>
+				</xsl:attribute>
 				<center>
 					<xsl:apply-templates select="v" mode="html"/>
 					<xsl:apply-templates select="s" mode="html"/>
@@ -80,7 +95,7 @@
 							<xsl:attribute name="value">start</xsl:attribute>
 						</input>
 						<input type="submit">
-							<xsl:attribute name="id">start</xsl:attribute>
+							<xsl:attribute name="class">start</xsl:attribute>
 							<xsl:attribute name="value">Start</xsl:attribute>
 						</input>
 					</form>
@@ -90,7 +105,7 @@
 							<xsl:attribute name="value">tare</xsl:attribute>
 						</input>
 						<input type="submit" name="action">
-							<xsl:attribute name="id">tare</xsl:attribute>
+							<xsl:attribute name="class">tare</xsl:attribute>
 							<xsl:attribute name="value">Tare</xsl:attribute>
 						</input>
 					</form>
@@ -100,7 +115,7 @@
 							<xsl:attribute name="value">stop</xsl:attribute>
 						</input>
 						<input type="submit" name="action">
-							<xsl:attribute name="id">stop</xsl:attribute>
+							<xsl:attribute name="class">stop</xsl:attribute>
 							<xsl:attribute name="value">Stop</xsl:attribute>
 						</input>
 					</form>
@@ -111,29 +126,31 @@
 
 	<xsl:template match="/r/v" mode="html">
 		<p>
-			<xsl:attribute name="id">value</xsl:attribute>
+			<xsl:attribute name="class">value</xsl:attribute>
 			<xsl:value-of select="text()"/>
 		</p>
 	</xsl:template>
 
 	<xsl:template match="/r/s" mode="html">
 		<p>
-			<xsl:attribute name="id">started</xsl:attribute>
+			<xsl:attribute name="class">started</xsl:attribute>
 			<xsl:value-of select="@t"/><br/>
 			<xsl:choose>
 				<xsl:when test="a">running for</xsl:when>
 				<xsl:otherwise>completed after</xsl:otherwise>
 			</xsl:choose>
 			<xsl:text> </xsl:text><xsl:value-of select="@d"/><br/><br/>
-			<xsl:choose>
-				<xsl:when test="z"><span class="tare">tare set</span></xsl:when>
-				<xsl:otherwise><span class="no_tare">no tare</span></xsl:otherwise>
-			</xsl:choose><br/>
+			<span class="tare">
+				<xsl:choose>
+					<xsl:when test="z">tare set</xsl:when>
+					<xsl:otherwise>no tare</xsl:otherwise>
+				</xsl:choose>
+			</span><br/>
 			<xsl:value-of select="@c"/>/<xsl:value-of select="@m"/>
 		</p>
 	</xsl:template>
 
 	<xsl:template match="/r/n">
-		<p>No readings</p>
+		<p class="none">No readings</p>
 	</xsl:template>
 </xsl:stylesheet>
