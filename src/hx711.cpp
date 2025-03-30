@@ -31,6 +31,7 @@
 
 #include <uuid/log.h>
 
+#include "app/app.h"
 #include "app/fs.h"
 #include "app/util.h"
 
@@ -178,6 +179,8 @@ void HX711::save() {
 	filename.append("/");
 	filename.append(std::to_string(realtime_us_.tv_sec));
 	filename.append(FILENAME_EXT);
+
+	std::lock_guard lock{app::App::file_mutex()};
 
 	auto file = FS.open(filename.c_str(), "w", true);
 	if (!file) {
