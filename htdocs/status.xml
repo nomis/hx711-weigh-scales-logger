@@ -119,6 +119,8 @@
 							<xsl:attribute name="value">Stop</xsl:attribute>
 						</input>
 					</form>
+
+					<p class="files"><a href="/files">Files</a></p>
 				</center>
 			</body>
 		</html>

@@ -20,7 +20,10 @@
 
 #include <Arduino.h>
 
+#include <functional>
 #include <mutex>
+#include <string>
+#include <string_view>
 #include <sys/time.h>
 
 #include <uuid/log.h>
@@ -66,6 +69,12 @@ public:
     inline bool has_tare() const { std::lock_guard lock{mutex_}; return buffer_tare_; }
     inline unsigned long max_count() const { return BUFFER_SIZE; }
     void stop();
+
+    void list_files(std::function<void(const std::string &filename, const std::string &timestamp)> func);
+    bool file_exists(const std::string_view filename);
+    std::string file_name(const std::string &filename, bool safe);
+    void get_file(const std::string_view filename, Stream &output);
+    void delete_file(const std::string_view filename);
 
 protected:
     static uuid::log::Logger logger_;

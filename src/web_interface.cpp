@@ -28,6 +28,7 @@
 #include "app/config.h"
 #include "scales/app.h"
 #include "scales/web_server.h"
+#include "htdocs/files.xml.gz.h"
 #include "htdocs/status.xml.gz.h"
 
 #ifndef PSTR_ALIGN
@@ -55,6 +56,12 @@ WebInterface::WebInterface(App &app) : app_(app) {
 	server_.add_post_handler("/action", std::bind(&WebInterface::action, this, _1));
 	server_.add_static_content("/" + app_.immutable_id() + "/status.xml",
 		"application/xslt+xml", gzip_immutable_headers, htdocs_status_xml_gz);
+
+	server_.add_get_handler("/files", std::bind(&WebInterface::files, this, _1));
+	server_.add_get_handler("/download/*", std::bind(&WebInterface::access_file, this, _1));
+	server_.add_get_handler("/delete/*", std::bind(&WebInterface::access_file, this, _1));
+	server_.add_static_content("/" + app_.immutable_id() + "/files.xml",
+		"application/xslt+xml", gzip_immutable_headers, htdocs_files_xml_gz);
 }
 
 bool WebInterface::status(WebServer::Request &req) {
@@ -167,6 +174,76 @@ bool WebInterface::action(WebServer::Request &req) {
 			"<link rel=\"icon\" href=\"data:,\"/>"
 			"</head><body><p>%s</p></body></html>", message);
 	}
+	return true;
+}
+
+bool WebInterface::files(WebServer::Request &req) {
+	req.set_status(200);
+	req.set_type("application/xml");
+	req.add_header("Cache-Control", "no-cache");
+
+	req.printf(
+			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+			"<?xml-stylesheet type=\"text/xsl\" href=\"/%s/files.xml\"?>"
+			"<r>", app_.immutable_id().c_str()
+	);
+
+	HX711 &hx711 = app_.hx711();
+
+	hx711.list_files([&] (const std::string &filename, const std::string &timestamp) {
+		req.printf("<f n=\"%s\">%s</f>", filename.c_str(), timestamp.c_str());
+	});
+
+	req.print("</r>");
+	return true;
+}
+
+bool WebInterface::access_file(WebServer::Request &req) {
+	constexpr const char *download_prefix = "/download/";
+	constexpr const char *delete_prefix = "/delete/";
+	auto filename = req.uri();
+	HX711 &hx711 = app_.hx711();
+	bool exists = false;
+	bool download = true;
+
+	if (filename.rfind(download_prefix, 0) == 0) {
+		filename.remove_prefix(::strlen(download_prefix));
+		exists = hx711.file_exists(filename);
+	} else if (filename.rfind(delete_prefix, 0) == 0) {
+		filename.remove_prefix(::strlen(delete_prefix));
+		exists = hx711.file_exists(filename);
+		download = false;
+	}
+
+	if (exists) {
+		req.set_status(200);
+
+		if (download) {
+			req.set_type("application/cbor");
+			req.add_header("Cache-Control", "no-cache");
+			req.add_header("Content-Disposition", "attachment; filename=\""
+				+ hx711.file_name(std::string{filename}, true) + ".cbor\"");
+
+			hx711.get_file(filename, req);
+		} else {
+			hx711.delete_file(filename);
+
+			req.set_type("text/html");
+			req.add_header("Cache-Control", "no-cache");
+			req.printf(
+				"<!DOCTYPE html><html><head>"
+				"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+				"<meta http-equiv=\"refresh\" content=\"0;URL=/files\">"
+				"<link rel=\"icon\" href=\"data:,\"/>"
+				"</head><body><p>%.*s deleted</p></body></html>", filename.size(), filename.begin());
+		}
+	} else {
+		req.set_status(404);
+		req.set_type("text/plain");
+		req.add_header("Cache-Control", "no-cache");
+		req.printf("Not found");
+	}
+
 	return true;
 }
 

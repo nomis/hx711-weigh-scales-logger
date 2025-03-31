@@ -48,6 +48,7 @@ WebServer::WebServer(uint16_t port) {
 
 	config.task_priority = uxTaskPriorityGet(nullptr);
 	config.server_port = port;
+	config.uri_match_fn = httpd_uri_match_wildcard;
 
 	err = httpd_start(&server, &config);
 

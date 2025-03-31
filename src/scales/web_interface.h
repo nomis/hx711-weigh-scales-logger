@@ -39,6 +39,9 @@ private:
 	bool status(WebServer::Request &req);
 	bool action(WebServer::Request &req);
 
+	bool files(WebServer::Request &req);
+	bool access_file(WebServer::Request &req);
+
 	static uuid::log::Logger logger_;
 
 	App &app_;

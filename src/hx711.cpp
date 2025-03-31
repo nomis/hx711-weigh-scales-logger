@@ -23,7 +23,10 @@
 #include <algorithm>
 #include <cassert>
 #include <mutex>
+#include <string>
+#include <string_view>
 #include <sys/time.h>
+#include <vector>
 
 #include <CBOR.h>
 #include <CBOR_parsing.h>
@@ -241,6 +244,92 @@ void HX711::save() {
 	}
 
 	logger_.info(F("Saved readings to %s"), filename.c_str());
+}
+
+void HX711::list_files(std::function<void(const std::string &filename,
+		const std::string &timestamp)> func) {
+	std::lock_guard lock{app::App::file_mutex()};
+	const char mode[2] = { 'r', '\0' };
+	auto dir = FS.open(DIRECTORY_NAME, mode);
+	size_t len = strlen(DIRECTORY_NAME) + 1;
+
+	while (true) {
+		auto name = dir.getNextFileName();
+		if (name.length() > len) {
+			std::string filename{name.c_str() + len};
+
+			func(filename, file_name(filename, false));
+		} else {
+			break;
+		}
+	}
+}
+
+bool HX711::file_exists(const std::string_view filename) {
+	std::lock_guard lock{app::App::file_mutex()};
+	std::string path = DIRECTORY_NAME;
+
+	path.append("/");
+	path.append(filename);
+
+	return !filename.empty() && FS.open(path.c_str());
+}
+
+std::string HX711::file_name(const std::string &filename, bool safe) {
+	std::string timestamp;
+	struct tm tm;
+	time_t t = ::atoi(filename.c_str());
+
+	tm.tm_year = 0;
+	::gmtime_r(&t, &tm);
+
+	if (tm.tm_year != 0) {
+		std::vector<char> tmp(48);
+
+		::snprintf(tmp.data(), tmp.size(),
+			safe ? "%04u-%02u-%02u_%02u-%02u-%02u" :
+			"%04u-%02u-%02u %02u:%02u:%02u",
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+		return {tmp.data()};
+	} else {
+		return filename;
+	}
+}
+
+void HX711::get_file(const std::string_view filename, Stream &output) {
+	std::lock_guard lock{app::App::file_mutex()};
+	std::string path = DIRECTORY_NAME;
+
+	path.append("/");
+	path.append(filename);
+
+	auto file = FS.open(path.c_str());
+
+	if (file) {
+		std::vector<char> buf(512);
+
+		while (true) {
+			size_t len = file.readBytes(buf.data(), buf.size());
+
+			if (len > 0) {
+				output.write(buf.data(), len);
+			} else {
+				break;
+			}
+		}
+	}
+}
+
+void HX711::delete_file(const std::string_view filename) {
+	std::lock_guard lock{app::App::file_mutex()};
+	std::string path = DIRECTORY_NAME;
+
+	path.append("/");
+	path.append(filename);
+
+	FS.remove(path.c_str());
 }
 
 } // namespace scales
