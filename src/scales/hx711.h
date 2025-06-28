@@ -50,7 +50,7 @@ using MemoryAllocation = std::unique_ptr<Data, MemoryDeleter>;
 
 class HX711 {
 public:
-    static constexpr unsigned long BUFFER_SIZE = 80 * 900;
+    static constexpr unsigned long BUFFER_SIZE = 90 * 900; /* 88.5Hz for 900s */
 
 	HX711(int data_pin, int sck_pin);
 
